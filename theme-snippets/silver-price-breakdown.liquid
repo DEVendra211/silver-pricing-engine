@@ -1,0 +1,159 @@
+{%- doc -%}
+  Shows a transparent price breakdown (silver value, making charges,
+  packaging, profit margin, GST) for silver-priced products, computed live
+  from silver_pricing.* metafields and today's shop-wide rate.
+
+  This is a DISPLAY-ONLY breakdown for customer trust. The authoritative
+  price customers actually pay is the real variant price, which is kept in
+  sync by the separate backend recalculation job (silver-pricing-engine).
+  If that job hasn't run yet after a rate change, this breakdown and the
+  listed price may briefly disagree — run "Recalculate All Prices" to fix.
+
+  @param {product} product - The current product
+  @param {variant} [current_variant] - Defaults to product.selected_or_first_available_variant
+{%- enddoc -%}
+
+{% liquid
+  assign variant = current_variant | default: product.selected_or_first_available_variant
+  assign rate_per_gram = metaobjects.silver_rate_settings['current-rate'].rate_per_gram.value
+
+  assign weight = variant.metafields.silver_pricing.weight_grams.value | default: product.metafields.silver_pricing.weight_grams.value
+  assign making_pct = variant.metafields.silver_pricing.making_charges_percent.value | default: product.metafields.silver_pricing.making_charges_percent.value
+  assign packaging = variant.metafields.silver_pricing.packaging_charges.value | default: product.metafields.silver_pricing.packaging_charges.value
+  assign profit = variant.metafields.silver_pricing.profit_margin.value | default: product.metafields.silver_pricing.profit_margin.value
+
+  assign has_all_fields = true
+  if rate_per_gram == blank or weight == blank or making_pct == blank or packaging == blank or profit == blank
+    assign has_all_fields = false
+  endif
+%}
+
+{% if has_all_fields %}
+  {% liquid
+    assign silver_value = weight | times: rate_per_gram
+    assign making_charges = silver_value | times: making_pct | divided_by: 100.0
+    assign subtotal = silver_value | plus: making_charges | plus: packaging | plus: profit
+    assign gst = subtotal | times: 0.03
+    assign final_price = subtotal | plus: gst
+  %}
+
+  <div
+    class="silver-price-breakdown"
+    data-silver-breakdown
+    data-rate-per-gram="{{ rate_per_gram }}"
+    data-weight="{{ weight }}"
+    data-making-pct="{{ making_pct }}"
+    data-packaging="{{ packaging }}"
+    data-profit="{{ profit }}"
+  >
+    <button type="button" class="silver-price-breakdown__toggle" aria-expanded="false">
+      Price breakdown (today's rate: ₹{{ rate_per_gram }}/g)
+    </button>
+    <dl class="silver-price-breakdown__list" hidden>
+      <div class="silver-price-breakdown__row">
+        <dt>Silver value ({{ weight }}g x ₹{{ rate_per_gram }})</dt>
+        <dd data-field="silverValue">{{ silver_value | times: 100 | money }}</dd>
+      </div>
+      <div class="silver-price-breakdown__row">
+        <dt>Making charges ({{ making_pct }}%)</dt>
+        <dd data-field="makingCharges">{{ making_charges | times: 100 | money }}</dd>
+      </div>
+      <div class="silver-price-breakdown__row">
+        <dt>Packaging charges</dt>
+        <dd data-field="packagingCharges">{{ packaging | times: 100 | money }}</dd>
+      </div>
+      <div class="silver-price-breakdown__row">
+        <dt>Profit margin</dt>
+        <dd data-field="profitMargin">{{ profit | times: 100 | money }}</dd>
+      </div>
+      <div class="silver-price-breakdown__row">
+        <dt>GST (3%)</dt>
+        <dd data-field="gst">{{ gst | times: 100 | money }}</dd>
+      </div>
+      <div class="silver-price-breakdown__row silver-price-breakdown__row--total">
+        <dt>Total</dt>
+        <dd data-field="finalPrice">{{ final_price | times: 100 | money }}</dd>
+      </div>
+    </dl>
+  </div>
+{% else %}
+  {% comment %}
+    Fallback: one or more silver_pricing metafields are missing for this
+    variant/product. Don't break the page — just skip the breakdown and let
+    the normal Shopify price display as usual.
+  {% endcomment %}
+  <p class="silver-price-breakdown silver-price-breakdown--fallback" data-silver-breakdown-fallback>
+    Price breakdown unavailable for this item.
+  </p>
+{% endif %}
+
+{% comment %}
+  Per-variant inputs so the breakdown can recompute instantly when the
+  shopper switches variants, without a page reload or extra network call.
+{% endcomment %}
+<script type="application/json" data-silver-breakdown-variants>
+  {
+    "ratePerGram": {{ rate_per_gram | default: 0 | json }},
+    "variants": {
+      {% for v in product.variants %}
+        {% liquid
+          assign v_weight = v.metafields.silver_pricing.weight_grams.value | default: product.metafields.silver_pricing.weight_grams.value
+          assign v_making_pct = v.metafields.silver_pricing.making_charges_percent.value | default: product.metafields.silver_pricing.making_charges_percent.value
+          assign v_packaging = v.metafields.silver_pricing.packaging_charges.value | default: product.metafields.silver_pricing.packaging_charges.value
+          assign v_profit = v.metafields.silver_pricing.profit_margin.value | default: product.metafields.silver_pricing.profit_margin.value
+        %}
+        "{{ v.id }}": {
+          "weightGrams": {{ v_weight | default: null | json }},
+          "makingChargesPercent": {{ v_making_pct | default: null | json }},
+          "packagingCharges": {{ v_packaging | default: null | json }},
+          "profitMargin": {{ v_profit | default: null | json }}
+        }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    }
+  }
+</script>
+
+{% stylesheet %}
+  .silver-price-breakdown {
+    margin-block: 12px;
+    font-size: 0.85rem;
+  }
+
+  .silver-price-breakdown__toggle {
+    background: none;
+    border: 1px dashed #31B5AB;
+    color: #221A4E;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+
+  .silver-price-breakdown__list {
+    margin: 10px 0 0;
+    padding: 12px;
+    background: #F4F0FA;
+    border-radius: 8px;
+  }
+
+  .silver-price-breakdown__row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    color: #221A4E;
+  }
+
+  .silver-price-breakdown__row--total {
+    border-top: 1px solid #DFDFDF;
+    margin-top: 4px;
+    padding-top: 8px;
+    font-weight: 700;
+  }
+
+  .silver-price-breakdown--fallback {
+    color: #6B6B7B;
+    font-style: italic;
+  }
+{% endstylesheet %}
+
+<script src="{{ 'silver-price-breakdown.js' | asset_url }}" defer="defer"></script>

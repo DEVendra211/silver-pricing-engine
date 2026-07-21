@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>MAA SILVER — Silver Rate Pricing</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="card">
+    <h1>Today's Silver Rate</h1>
+    <p class="hint">Enter today's rate and update — every product price recalculates in one step.</p>
+
+    <label for="rate">Rate per gram (₹)</label>
+    <div class="rate-row">
+      <input id="rate" type="number" step="0.01" min="0" placeholder="e.g. 95.50" />
+    </div>
+    <p id="currentRateNote" class="status"></p>
+
+    <button id="updatePrices" class="primary">Update Rate &amp; Recalculate Prices</button>
+    <p id="updateStatus" class="status"></p>
+
+    <div id="summary" class="summary" hidden>
+      <h2>Last Run Summary</h2>
+      <ul id="summaryList"></ul>
+      <details id="incompleteDetails" hidden>
+        <summary>Products with missing metafields</summary>
+        <ul id="incompleteList"></ul>
+      </details>
+      <details id="errorDetails" hidden>
+        <summary>Errors</summary>
+        <ul id="errorList"></ul>
+      </details>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
