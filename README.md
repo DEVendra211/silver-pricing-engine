@@ -26,16 +26,29 @@ the product's value is used.
 
 ## One-time setup
 
-1. In Shopify admin: **Settings → Apps and sales channels → Develop apps →
-   Create an app**. Give it these Admin API scopes:
+Shopify retired the old "Settings → Develop apps → static token" flow for
+*new* custom apps. Apps are now created in the **Dev Dashboard**
+(dev.shopify.com), and instead of a token you copy once, you get a
+Client ID + Client secret that the app exchanges for a short-lived (24h)
+token automatically — `lib/shopifyAdmin.js` already handles that refresh.
+
+1. Go to **dev.shopify.com** and sign in with your Shopify account.
+2. **Apps → Create app**. Name it e.g. "Silver Pricing Engine".
+3. Under **Settings → Access scopes** (or during setup), add:
    `read_products, write_products, read_metaobjects, write_metaobjects`.
-   Install it and copy the Admin API access token.
-2. `cp .env.example .env` and fill in `SHOPIFY_STORE_DOMAIN` and
-   `SHOPIFY_ADMIN_ACCESS_TOKEN`.
-3. `npm install`
-4. `npm run setup-metafields` — creates the product/variant metafield
+4. **Settings** page → copy the **Client ID** and **Client secret**.
+5. Install the app on your store — there's an "install" / "select store"
+   step in the Dev Dashboard flow. It must land on **maa-silver.myshopify.com**
+   specifically.
+   - If you hit a `shop_not_permitted` error later, it means the app and the
+     store aren't in the same Shopify organization — check **Dev stores** in
+     the sidebar of the Dev Dashboard and confirm this store is listed there.
+6. `cp .env.example .env` and fill in `SHOPIFY_STORE_DOMAIN`,
+   `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`.
+7. `npm install`
+8. `npm run setup-metafields` — creates the product/variant metafield
    definitions listed below (safe to re-run).
-5. `npm run setup-rate-metaobject` — creates the "Silver Rate Settings"
+9. `npm run setup-rate-metaobject` — creates the "Silver Rate Settings"
    metaobject (definition + one entry, defaulted to 0) so the rate is
    editable in Shopify admin (safe to re-run).
 
@@ -113,7 +126,8 @@ reachable by anyone who has it otherwise.
 2. Create a free account at render.com, click **New → Blueprint**, connect
    the repo. Render reads `render.yaml` automatically.
 3. When prompted, fill in the environment variables: `SHOPIFY_STORE_DOMAIN`,
-   `SHOPIFY_ADMIN_ACCESS_TOKEN`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`.
+   `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `ADMIN_USERNAME`,
+   `ADMIN_PASSWORD`.
 4. Deploy. You'll get a URL like `https://silver-pricing-engine.onrender.com`.
    Free tier sleeps after 15 min idle, so the first load after a while takes
    ~30s to wake up — fine for a once-a-day tool.
@@ -124,7 +138,7 @@ reachable by anyone who has it otherwise.
    folder directly — no GitHub required).
 2. Create a free account at vercel.com, **Add New → Project**, import the
    repo (or follow the CLI prompts if using `npx vercel`).
-3. In the project's **Settings → Environment Variables**, add the same 4
+3. In the project's **Settings → Environment Variables**, add the same 5
    variables as above.
 4. Deploy. `vercel.json` + `api/index.js` already route everything through
    the same Express app — no further changes needed.
