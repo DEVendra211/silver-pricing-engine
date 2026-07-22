@@ -1,0 +1,90 @@
+{%- doc -%}
+  Shows today's silver rate prominently, with a change indicator vs the
+  previous rate (the value it replaced the last time someone updated it via
+  the silver-pricing-engine admin panel or Shopify admin's metaobject entry).
+
+  @example
+  {% render 'silver-rate-widget' %}
+{%- enddoc -%}
+
+{% liquid
+  assign rate = metaobjects.silver_rate_settings['current-rate'].rate_per_gram.value
+  assign previous_rate = metaobjects.silver_rate_settings['current-rate'].previous_rate_per_gram.value
+
+  if rate != blank and previous_rate != blank
+    assign diff = rate | minus: previous_rate | round: 2
+  endif
+%}
+
+{% if rate != blank %}
+  <div class="silver-rate-widget">
+    <span class="silver-rate-widget__label">Today's Silver Rate</span>
+    <span class="silver-rate-widget__value">₹{{ rate | round: 2 }}/gm</span>
+    {% if diff != blank %}
+      {% if diff > 0 %}
+        <span class="silver-rate-widget__change silver-rate-widget__change--up">
+          <span aria-hidden="true">📈</span> +₹{{ diff }} since last update
+        </span>
+      {% elsif diff < 0 %}
+        {% assign abs_diff = diff | times: -1 %}
+        <span class="silver-rate-widget__change silver-rate-widget__change--down">
+          <span aria-hidden="true">📉</span> -₹{{ abs_diff }} since last update
+        </span>
+      {% else %}
+        <span class="silver-rate-widget__change silver-rate-widget__change--flat">
+          No change since last update
+        </span>
+      {% endif %}
+    {% endif %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .silver-rate-widget {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    background: #F4F0FA;
+    border: 1px solid #DFDFDF;
+    border-radius: 999px;
+    font-size: 0.9rem;
+  }
+
+  .silver-rate-widget__label {
+    color: #6B6B7B;
+  }
+
+  .silver-rate-widget__value {
+    font-weight: 700;
+    color: #221A4E;
+  }
+
+  .silver-rate-widget__change {
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 999px;
+  }
+
+  .silver-rate-widget__change--up {
+    color: #1a8a5f;
+    background: #E4F5EC;
+  }
+
+  .silver-rate-widget__change--down {
+    color: #c0392b;
+    background: #FBEAE8;
+  }
+
+  .silver-rate-widget__change--flat {
+    color: #6B6B7B;
+  }
+
+  @media screen and (max-width: 480px) {
+    .silver-rate-widget {
+      font-size: 0.8rem;
+      padding: 8px 14px;
+    }
+  }
+{% endstylesheet %}

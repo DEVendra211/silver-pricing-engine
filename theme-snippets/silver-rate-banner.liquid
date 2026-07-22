@@ -1,0 +1,58 @@
+{% liquid
+  assign alignment = section.settings.alignment | default: 'center'
+%}
+
+<div class="silver-rate-banner spacing-style section section--page-width" style="{% render 'spacing-padding', settings: section.settings %}; text-align: {{ alignment }};">
+  {% render 'silver-rate-widget' %}
+</div>
+
+{% stylesheet %}
+  .silver-rate-banner {
+    max-width: var(--page-width, 1400px);
+    margin-inline: auto;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Silver Rate Banner",
+  "settings": [
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "Alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top",
+      "min": 0,
+      "max": 60,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom",
+      "min": 0,
+      "max": 60,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    }
+  ],
+  "presets": [{ "name": "Silver Rate Banner" }]
+}
+{% endschema %}
